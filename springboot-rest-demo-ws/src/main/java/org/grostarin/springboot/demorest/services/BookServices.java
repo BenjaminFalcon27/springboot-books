@@ -3,7 +3,9 @@ package org.grostarin.springboot.demorest.services;
 import org.grostarin.springboot.demorest.domain.Book;
 import org.grostarin.springboot.demorest.dto.BookSearch;
 import org.grostarin.springboot.demorest.exceptions.BookIdMismatchException;
+import org.grostarin.springboot.demorest.exceptions.BookIsBannedException;
 import org.grostarin.springboot.demorest.exceptions.BookNotFoundException;
+import org.grostarin.springboot.demorest.repositories.BannedBookRepository;
 import org.grostarin.springboot.demorest.repositories.BookRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,8 @@ public class BookServices {
 
     @Autowired
     private BookRepository bookRepository;
+    @Autowired
+    private BannedBookRepository BannedBookRepository;
     
     public Iterable<Book> findAll(BookSearch bookSearchDTO) {
         if(bookSearchDTO!=null && StringUtils.hasText(bookSearchDTO.title())) {
@@ -28,6 +32,9 @@ public class BookServices {
     }
 
     public Book create(Book book) {
+        if (BannedBookRepository.findByTitle(book.getTitle()).size() > 0) {
+            throw new BookIsBannedException();
+        }
         Book book1 = bookRepository.save(book);
         return book1;
     }
@@ -45,5 +52,9 @@ public class BookServices {
         bookRepository.findById(id)
           .orElseThrow(BookNotFoundException::new);
         return bookRepository.save(book);
+    }
+
+    public boolean isBanned(Book book) {
+        return bookRepository.findByTitle(book.getTitle()).size() > 0;
     }
 }
